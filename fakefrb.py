@@ -18,7 +18,7 @@ class FRBGenerator:
                  snr_range):
         self.num_chan = num_chan
         self.num_samp = num_samp
-        self.fc = fc
+        self.fc = fc * 1e3      # convert to MHz
         self.bw = bw
         self.t_bin_width = t_bin_width
         self.dm_range = dm_range
@@ -44,16 +44,14 @@ class FRBGenerator:
         dm = np.random.uniform(low=self.dm_range[0],
                                high=self.dm_range[1],
                                size=(1, num_frb))
+        print('DM =', dm)
 
         # compute the dispersion delay per channel
         # (eq. 5.1 of Lorimer & Kramer, 2005)
         delta_t = np.abs(np.matmul(4.15e6 * (self.f_ref**-2 - self.f_chan**-2),
                                    dm))
-
-        # generate start offsets
-        t_start = np.random.randint(low=-self.num_samp // 2,
-                                    high=self.num_samp // 2,
-                                    size=num_frb)
+        print(delta_t.shape)
+        print(delta_t[0, :],  delta_t[-1, :])
 
         # generate Gaussian pulses
         pulse = self._generate_pulses(self.width_range,
@@ -63,19 +61,18 @@ class FRBGenerator:
 
         # generate pulse and add it to the background
         for i, spec in enumerate(self.specs):
+            t_start = np.random.uniform(low=-delta_t[0][i] / 2,
+                                        high=self.num_samp - delta_t[0][i] / 2,
+                                        size=1)[0]
+            print(t_start)
             for j in range(self.num_chan):
-                #sample_lo = t_start[i]\
-                #    + int(np.round(delta_t[self.num_chan - 1 - j][i])) - 5
-                #sample_hi = t_start[i]\
-                #    + int(np.round(delta_t[self.num_chan - 1 - j][i])) + 5
-                sample_lo = t_start[i]\
-                    + int(np.round(delta_t[self.num_chan - 1 - j][i]))\
-                    - len(pulse) // 2
-                sample_hi = t_start[i]\
-                    + int(np.round(delta_t[self.num_chan - 1 - j][i]))\
-                    + len(pulse) // 2
+                sample_lo = int(np.round(t_start
+                                         + delta_t[self.num_chan - 1 - j][i]
+                                         - len(pulse) / 2))
+                sample_hi = int(np.round(t_start
+                                         + delta_t[self.num_chan - 1 - j][i]
+                                         + len(pulse) / 2))
                 k = 0
-                #assert sample_hi - sample_lo == len(pulse)
                 for sample in range(sample_lo, sample_hi):
                     if sample >= 0 and sample < self.num_samp:
                         spec[self.num_chan - 1 - j][sample] += pulse[k][i]
@@ -89,11 +86,12 @@ class FRBGenerator:
         std = np.random.uniform(low=std_range[0],
                                 high=std_range[1],
                                 size=num_frb)
-        print(std)
+        print('std =', std)
 
         snr = np.random.uniform(low=snr_range[0],
                                 high=snr_range[1],
                                 size=num_frb)
+        print('snr =', snr)
 
         x_hi = 6 * std_range[1]
         x_lo = -x_hi
@@ -184,8 +182,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # input validation
-    if args.width_upper / args.t_bin_width >= args.num_samp * 0.1:
-        sys.stderr.write('ERROR: Pulse width upper limit is greater than 10% '
+    if args.width_upper / args.t_bin_width >= args.num_samp * 0.5:
+        sys.stderr.write('ERROR: Pulse width upper limit is greater than 50% '
                          'of number of samples!\n')
         sys.exit(1)
 
@@ -200,11 +198,12 @@ if __name__ == '__main__':
     frb_gen.generate(args.num_frb)
 
     # plot a few random dynamic spectra
-    indices = np.random.randint(low=0, high=args.num_frb, size=9)
-    plt.figure(figsize=(10, 10))
-    for i in range(9):
+    num_plot = 6
+    indices = np.random.randint(low=0, high=args.num_frb, size=num_plot)
+    plt.figure(figsize=(10, 6))
+    for i in range(num_plot):
         if i < args.num_frb:
-            plt.subplot(3, 3, i + 1)
+            plt.subplot(2, 3, i + 1)
             plt.imshow(frb_gen.specs[i], origin='lower', aspect='auto')
     plt.tight_layout()
     plt.show()
