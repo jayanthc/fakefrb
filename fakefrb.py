@@ -53,6 +53,19 @@ class FRBGenerator:
         print(delta_t.shape)
         print(delta_t[0, :],  delta_t[-1, :])
 
+        # number of time bins spanned by each pulse
+        #bin_span = delta_t[0, :] / self.t_bin_width
+        #print(bin_span)
+
+        # pick the start time of the pulse making sure at least 25% of the
+        # channels within the dynamic spectrum 'window' are covered
+        #for i in range(len(dm)):
+        #    bin_span * 0.25
+        #    t_start = np.random.uniform(low=bin_span * 0.75)
+        #t_start = np.random.uniform(low=-delta_t[0][i] / 2,
+        #                            high=self.num_samp - delta_t[0][i] / 2,
+        #                            size=1)[0]
+
         # generate Gaussian pulses
         pulse = self._generate_pulses(self.width_range,
                                       self.snr_range,
@@ -60,9 +73,10 @@ class FRBGenerator:
                                       num_frb)
 
         # generate pulse and add it to the background
+        t_obs = self.num_samp * self.t_bin_width
         for i, spec in enumerate(self.specs):
-            t_start = np.random.uniform(low=-delta_t[0][i] / 2,
-                                        high=self.num_samp - delta_t[0][i] / 2,
+            t_start = np.random.uniform(low=-delta_t[0, i] * 0.75,
+                                        high=t_obs - delta_t[0][i] * 0.25,
                                         size=1)[0]
             print(t_start)
             for j in range(self.num_chan):
@@ -87,6 +101,7 @@ class FRBGenerator:
                                 high=std_range[1],
                                 size=num_frb)
         print('std =', std)
+        print('width =', std * 2 * np.sqrt(2 * np.log(2)))
 
         snr = np.random.uniform(low=snr_range[0],
                                 high=snr_range[1],
