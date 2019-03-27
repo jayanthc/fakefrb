@@ -59,29 +59,29 @@ class FRBGenerator:
                                       self.t_bin_width,
                                       num_frb)
 
-        # generate pulse and add it to the background
         t_obs = self.num_samp * self.t_bin_width
         for i, spec in enumerate(self.specs):
             t_start = np.random.uniform(low=-delta_t[0, i] * 0.75,
                                         high=t_obs - delta_t[0][i] * 0.25,
                                         size=1)[0]
-            # testing
-            t_start = 0.0
-            #print(t_start)
+
+            # per channel scale factor
+            # TODO: make this some sort of polynomial
+            scale = np.random.uniform(low=0.9, high=1.1, size=self.num_chan)
+
             for j in range(self.num_chan):
                 sample_mid = (t_start + delta_t[self.num_chan - 1 - j][i])\
                              / self.t_bin_width
                 sample_lo = int(np.round(sample_mid - len(pulse) / 2))
                 sample_hi = int(np.round(sample_mid + len(pulse) / 2))
-                #print(sample_lo, sample_hi)
                 k = 0
                 for sample in range(sample_lo, sample_hi):
                     if sample >= 0 and sample < self.num_samp:
-                        spec[self.num_chan - 1 - j][sample] += pulse[k][i]
+                        spec[self.num_chan - 1 - j][sample]\
+                            += scale[j] * pulse[k][i]
                     k += 1
                     if k == len(pulse):
                         assert True
-            #print('----------------')
 
     def _generate_pulses(self, width_range, snr_range, t_bin_width, num_frb):
         # convert width (full width at half max.) to standard deviation
@@ -99,7 +99,6 @@ class FRBGenerator:
 
         x_hi = 6 * std_range[1]
         x_lo = -x_hi
-        #x = np.linspace(x_lo, x_hi, 2 * std_range[1] / t_bin_width)
         x0 = np.linspace(x_lo, 0, std_range[1] / t_bin_width)
         x1 = np.linspace(0, x_hi, std_range[1] / t_bin_width)
         x = np.concatenate((x0, x1))
