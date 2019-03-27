@@ -92,6 +92,9 @@ class FRBGenerator:
         print('std =', std)
         print('width =', std * 2 * np.sqrt(2 * np.log(2)))
 
+        # TODO: throw error if per-channel SNR is too low
+        # convert dedispersed SNR to per-channel SNR
+        snr_range /= np.sqrt(self.num_chan)
         snr = np.random.uniform(low=snr_range[0],
                                 high=snr_range[1],
                                 size=num_frb)
@@ -165,31 +168,31 @@ if __name__ == '__main__':
     parser.add_argument('-D',
                         '--dm_upper',
                         type=float,
-                        default=1000,
+                        default=3000,
                         help='dispersion measure, upper limit, in cm^-3 pc')
     # pulse width, lower limit, in ms
     parser.add_argument('-w',
                         '--width_lower',
                         type=float,
-                        default=0.1,
+                        default=0.01,
                         help='pulse width, lower limit, in ms')
     # pulse width, upper limit, in ms
     parser.add_argument('-W',
                         '--width_upper',
                         type=float,
-                        default=5,
+                        default=30,
                         help='pulse width, upper limit, in ms')
     # SNR, lower limit
     parser.add_argument('-s',
                         '--snr_lower',
                         type=float,
-                        default=3,
+                        default=1,
                         help='SNR, lower limit')
     # SNR, upper limit
     parser.add_argument('-S',
                         '--snr_upper',
                         type=float,
-                        default=30,
+                        default=250,
                         help='SNR, upper limit')
     args = parser.parse_args()
 
