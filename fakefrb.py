@@ -41,15 +41,15 @@ class FRBGenerator:
                                             self.num_samp))
 
         # generate random DMs
-        dm = np.random.uniform(low=self.dm_range[0],
-                               high=self.dm_range[1],
-                               size=(1, num_frb))
-        print('DM =', dm)
+        self.dm = np.random.uniform(low=self.dm_range[0],
+                                    high=self.dm_range[1],
+                                    size=(1, num_frb))
+        print('DM =', self.dm)
 
         # compute the dispersion delay per channel
         # (eq. 5.1 of Lorimer & Kramer, 2005)
         delta_t = np.abs(np.matmul(4.15e6 * (self.f_ref**-2 - self.f_chan**-2),
-                                   dm))
+                                   self.dm))
         print(delta_t.shape)
         print(delta_t[0, :],  delta_t[-1, :])
 
@@ -83,22 +83,28 @@ class FRBGenerator:
                     if k == len(pulse):
                         assert True
 
+    def _width_to_std(self, width):
+        return width / (2 * np.sqrt(2 * np.log(2)))
+
     def _generate_pulses(self, width_range, snr_range, t_bin_width, num_frb):
+        self.width = np.random.uniform(low=width_range[0],
+                                       high=width_range[1],
+                                       size=num_frb)
         # convert width (full width at half max.) to standard deviation
-        std_range = width_range / (2 * np.sqrt(2 * np.log(2)))
-        std = np.random.uniform(low=std_range[0],
-                                high=std_range[1],
-                                size=num_frb)
+        std = self._width_to_std(self.width)
+        std_range = self._width_to_std(width_range)
+
+        #std = np.random.uniform(low=std_range[0],
+        #                        high=std_range[1],
+        #                        size=num_frb)
+        print('width =', self.width)
         print('std =', std)
-        print('width =', std * 2 * np.sqrt(2 * np.log(2)))
 
         # TODO: throw error if per-channel SNR is too low
-        # convert dedispersed SNR to per-channel SNR
-        snr_range /= np.sqrt(self.num_chan)
-        snr = np.random.uniform(low=snr_range[0],
-                                high=snr_range[1],
-                                size=num_frb)
-        print('snr =', snr)
+        self.snr = np.random.uniform(low=snr_range[0],
+                                     high=snr_range[1],
+                                     size=num_frb)
+        print('snr =', self.snr)
 
         x_hi = 6 * std_range[1]
         x_lo = -x_hi
@@ -108,7 +114,7 @@ class FRBGenerator:
         x = x.reshape((len(x), 1))
 
         z = (x**2 / 2) * std**-2
-        pulse = snr * np.exp(-z)
+        pulse = (self.snr / np.sqrt(self.num_chan)) * np.exp(-z)
 
         print(pulse.shape)
         plt.figure()
@@ -221,5 +227,9 @@ if __name__ == '__main__':
             plt.subplot(2, 3, i + 1)
             plt.imshow(frb_gen.specs[i], origin='lower', aspect='auto')
             plt.colorbar()
+            plt.title('d = {:.3f}\nw = {:.3f}\ns = {:.3f}'
+                      .format(frb_gen.dm[0, i],
+                              frb_gen.width[i],
+                              frb_gen.snr[i]))
     plt.tight_layout()
     plt.show()
