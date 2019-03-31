@@ -56,10 +56,10 @@ class FRBGenerator:
         print(delta_t[0, :],  delta_t[-1, :])
 
         # generate Gaussian pulses
-        pulse = self._generate_pulses(self.width_range,
-                                      self.snr_range,
-                                      self.t_bin_width,
-                                      num_frb)
+        pulse = self.__generate_pulses(self.width_range,
+                                       self.snr_range,
+                                       self.t_bin_width,
+                                       num_frb)
 
         t_obs = self.num_samp * self.t_bin_width
         for i, spec in enumerate(self.specs):
@@ -86,28 +86,21 @@ class FRBGenerator:
                     if k == len(pulse):
                         assert True
 
-    def _width_to_std(self, width):
+    def __width_to_std(self, width):
         return width / (2 * np.sqrt(2 * np.log(2)))
 
-    def _generate_pulses(self, width_range, snr_range, t_bin_width, num_frb):
+    def __generate_pulses(self, width_range, snr_range, t_bin_width, num_frb):
         self.width = np.random.uniform(low=width_range[0],
                                        high=width_range[1],
                                        size=num_frb)
         # convert width (full width at half max.) to standard deviation
-        std = self._width_to_std(self.width)
-        std_range = self._width_to_std(width_range)
-
-        #std = np.random.uniform(low=std_range[0],
-        #                        high=std_range[1],
-        #                        size=num_frb)
-        print('width =', self.width)
-        print('std =', std)
+        std = self.__width_to_std(self.width)
+        std_range = self.__width_to_std(width_range)
 
         # TODO: throw error if per-channel SNR is too low
         self.snr = np.random.uniform(low=snr_range[0],
                                      high=snr_range[1],
                                      size=num_frb)
-        print('snr =', self.snr)
 
         x_hi = 6 * std_range[1]
         x_lo = -x_hi
@@ -118,12 +111,6 @@ class FRBGenerator:
 
         z = (x**2 / 2) * std**-2
         pulse = (self.snr / np.sqrt(self.num_chan)) * np.exp(-z)
-
-        print(pulse.shape)
-        plt.figure()
-        for i in range(pulse.shape[1]):
-            plt.plot(x, pulse[:, i], 'o:')
-        plt.show()
 
         return pulse
 
@@ -149,10 +136,6 @@ def validate_width(args):
         return False
     else:
         return True
-
-
-def plot_op_bottom(image, axis):
-    return np.sum(image, axis=axis) / np.sqrt(image.shape[axis])
 
 
 if __name__ == '__main__':
@@ -261,22 +244,14 @@ if __name__ == '__main__':
     # plot a few random dynamic spectra
     num_plot = 6
     indices = np.random.randint(low=0, high=args.num_frb, size=num_plot)
+    plt.figure(figsize=(12, 7))
     for i in range(num_plot):
         if i < args.num_frb:
-            plt.figure(figsize=(3, 3))
-            #plt.subplot(211)
-            #plt.imshow(frb_gen.specs[i], origin='lower', aspect='auto')
-            axisplot = ap.AxisPlot(opbottom=plot_op_bottom,
-                                   origin='lower',
-                                   aspect='auto')
-            ax, ax_bottom = axisplot.plot(frb_gen.specs[i])
-            #plt.colorbar()
-            #ax.set_title('d = {:.3f}\nw = {:.3f}\ns = {:.3f}'
-            #             .format(frb_gen.dm[0, i],
-            #                     frb_gen.width[i],
-            #                     frb_gen.snr[i]))
-            #plt.subplot(212)
-            #print(len(np.sum(frb_gen.specs[i], axis=0)))
-            #plt.plot(np.sum(frb_gen.specs[i], axis=0) / np.sqrt(args.num_chan))
-            #print(np.sum(frb_gen.specs[i], axis=0).std())
-            plt.show()
+            plt.subplot(2, 3, i + 1)
+            plt.imshow(frb_gen.specs[i], origin='lower', aspect='auto')
+            plt.title('d = {:.3f}\nw = {:.3f}\ns = {:.3f}'
+                      .format(frb_gen.dm[0, i],
+                              frb_gen.width[i],
+                              frb_gen.snr[i]))
+    plt.tight_layout()
+    plt.show()
