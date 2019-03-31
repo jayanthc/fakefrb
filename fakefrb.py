@@ -3,6 +3,7 @@ import argparse
 import numpy as np
 import scipy.stats as ss
 import matplotlib.pyplot as plt
+import axisplot as ap
 import seaborn as sns
 
 
@@ -39,6 +40,7 @@ class FRBGenerator:
                                       size=(num_frb,
                                             self.num_chan,
                                             self.num_samp))
+        #self.specs = np.zeros((num_frb, self.num_chan, self.num_samp))
 
         # generate random DMs
         self.dm = np.random.uniform(low=self.dm_range[0],
@@ -67,7 +69,8 @@ class FRBGenerator:
 
             # per channel scale factor
             # TODO: make this some sort of polynomial
-            scale = np.random.uniform(low=0.9, high=1.1, size=self.num_chan)
+            #scale = np.random.uniform(low=0.9, high=1.1, size=self.num_chan)
+            scale = np.ones((self.num_chan,))
 
             for j in range(self.num_chan):
                 sample_mid = (t_start + delta_t[self.num_chan - 1 - j][i])\
@@ -125,6 +128,33 @@ class FRBGenerator:
         return pulse
 
 
+# input validation functions
+def validate_width(args):
+    '''
+    Validate pulse width. We would like the pulse to be visible within our
+    dynamic spectrum window, and for that, its width needs to be less than some
+    fraction of the width of the window (i.e., number of time samples).
+    '''
+    # compute per channel width
+    width_lim_pct = 1.5
+    if args.width_upper / args.t_bin_width >= args.num_samp * width_lim_pct:
+        sys.stderr.write('ERROR: Pulse width upper limit {} ms ({} samples at '
+                         'a time bin width of {} ms) is greater than {:.0%} '
+                         'of number of samples ({})!\n'
+                         .format(args.width_upper,
+                                 args.width_upper / args.t_bin_width,
+                                 args.t_bin_width,
+                                 width_lim_pct,
+                                 args.num_samp))
+        return False
+    else:
+        return True
+
+
+def plot_op_bottom(image, axis):
+    return np.sum(image, axis=axis) / np.sqrt(image.shape[axis])
+
+
 if __name__ == '__main__':
     # parse arguments
     parser = argparse.ArgumentParser()
@@ -133,79 +163,89 @@ if __name__ == '__main__':
                         '--num_frb',
                         type=int,
                         default=1,
-                        help='number of FRBs to be generated')
+                        help='number of FRBs to be generated '
+                             '(default: %(default)s)')
     # number of channels
     parser.add_argument('-c',
                         '--num_chan',
                         type=int,
                         default=512,
-                        help='number of channels')
+                        help='number of channels '
+                             '(default: %(default)s)')
     # number of time samples
     parser.add_argument('-i',
                         '--num_samp',
                         type=int,
                         default=1024,
-                        help='number of time samples')
+                        help='number of time samples '
+                             '(default: %(default)s)')
     # centre frequency in GHz
     parser.add_argument('-f',
                         '--fc',
                         type=float,
-                        default=1.4204057517667,
-                        help='centre frequency in GHz')
+                        default=1.440,
+                        help='centre frequency in GHz '
+                             '(default: %(default)s)')
     # bandwidth in MHz
     parser.add_argument('-b',
                         '--bw',
                         type=float,
                         default=100.0,
-                        help='bandwidth in MHz')
+                        help='bandwidth in MHz '
+                             '(default: %(default)s)')
     # bin width in time, in ms
     parser.add_argument('-t',
                         '--t_bin_width',
                         type=float,
                         default=0.064,
-                        help='bin width in time, in ms')
+                        help='bin width in time, in ms '
+                             '(default: %(default)s)')
     # dispersion measure, lower limit, in cm^-3 pc
     parser.add_argument('-d',
                         '--dm_lower',
                         type=float,
                         default=10,
-                        help='dispersion measure, lower limit, in cm^-3 pc')
+                        help='dispersion measure, lower limit, in cm^-3 pc '
+                             '(default: %(default)s)')
     # dispersion measure, upper limit, in cm^-3 pc
     parser.add_argument('-D',
                         '--dm_upper',
                         type=float,
                         default=3000,
-                        help='dispersion measure, upper limit, in cm^-3 pc')
+                        help='dispersion measure, upper limit, in cm^-3 pc '
+                             '(default: %(default)s)')
     # pulse width, lower limit, in ms
     parser.add_argument('-w',
                         '--width_lower',
                         type=float,
                         default=0.01,
-                        help='pulse width, lower limit, in ms')
+                        help='pulse width, lower limit, in ms '
+                             '(default: %(default)s)')
     # pulse width, upper limit, in ms
     parser.add_argument('-W',
                         '--width_upper',
                         type=float,
                         default=30,
-                        help='pulse width, upper limit, in ms')
+                        help='pulse width, upper limit, in ms '
+                             '(default: %(default)s)')
     # SNR, lower limit
     parser.add_argument('-s',
                         '--snr_lower',
                         type=float,
                         default=1,
-                        help='SNR, lower limit')
+                        help='SNR, lower limit '
+                             '(default: %(default)s)')
     # SNR, upper limit
     parser.add_argument('-S',
                         '--snr_upper',
                         type=float,
                         default=250,
-                        help='SNR, upper limit')
+                        help='SNR, upper limit '
+                             '(default: %(default)s)')
     args = parser.parse_args()
 
     # input validation
-    if args.width_upper / args.t_bin_width >= args.num_samp * 0.5:
-        sys.stderr.write('ERROR: Pulse width upper limit is greater than 50% '
-                         'of number of samples!\n')
+    if not validate_width(args):
         sys.exit(1)
 
     frb_gen = FRBGenerator(args.num_chan,
@@ -221,15 +261,22 @@ if __name__ == '__main__':
     # plot a few random dynamic spectra
     num_plot = 6
     indices = np.random.randint(low=0, high=args.num_frb, size=num_plot)
-    plt.figure(figsize=(10, 6))
     for i in range(num_plot):
         if i < args.num_frb:
-            plt.subplot(2, 3, i + 1)
-            plt.imshow(frb_gen.specs[i], origin='lower', aspect='auto')
-            plt.colorbar()
-            plt.title('d = {:.3f}\nw = {:.3f}\ns = {:.3f}'
-                      .format(frb_gen.dm[0, i],
-                              frb_gen.width[i],
-                              frb_gen.snr[i]))
-    plt.tight_layout()
-    plt.show()
+            plt.figure(figsize=(3, 3))
+            #plt.subplot(211)
+            #plt.imshow(frb_gen.specs[i], origin='lower', aspect='auto')
+            axisplot = ap.AxisPlot(opbottom=plot_op_bottom,
+                                   origin='lower',
+                                   aspect='auto')
+            ax, ax_bottom = axisplot.plot(frb_gen.specs[i])
+            #plt.colorbar()
+            #ax.set_title('d = {:.3f}\nw = {:.3f}\ns = {:.3f}'
+            #             .format(frb_gen.dm[0, i],
+            #                     frb_gen.width[i],
+            #                     frb_gen.snr[i]))
+            #plt.subplot(212)
+            #print(len(np.sum(frb_gen.specs[i], axis=0)))
+            #plt.plot(np.sum(frb_gen.specs[i], axis=0) / np.sqrt(args.num_chan))
+            #print(np.sum(frb_gen.specs[i], axis=0).std())
+            plt.show()
