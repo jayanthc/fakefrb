@@ -2,7 +2,6 @@ import sys
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
 
 import frb_generator
 
@@ -51,6 +50,10 @@ def is_dm_valid(args):
                          'limit {}!\n'
                          .format(args.dm_lower, args.dm_upper))
         return False
+
+    if args.dm_upper == 0:
+        # no need to check validity
+        return True
 
     # reference frequency, taken as the centre frequency of the highest
     # frequency channel
@@ -159,6 +162,12 @@ if __name__ == '__main__':
                         default=250,
                         help='SNR, upper limit '
                              '(default: %(default)s)')
+    # output file name
+    parser.add_argument('-o',
+                        '--out_file',
+                        type=str,
+                        help='output file name (*.npz)',
+                        required=True)
     args = parser.parse_args()
 
     # input validation
@@ -177,6 +186,18 @@ if __name__ == '__main__':
                                          (args.snr_lower, args.snr_upper))
     frb_gen.generate(args.num_frb)
 
+    # save FRBs to disk
+    np.savez_compressed(args.out_file,
+                        specs=frb_gen.specs,
+                        dm=frb_gen.dm,
+                        width=frb_gen.width,
+                        snr=frb_gen.snr,
+                        num_chan=args.num_chan,
+                        num_samp=args.num_samp,
+                        fc=args.fc,
+                        bw=args.bw,
+                        t_bin_width=args.t_bin_width)
+
     # plot a few random dynamic spectra
     num_plot = 6
     if args.num_frb <= num_plot:
@@ -194,5 +215,7 @@ if __name__ == '__main__':
                           frb_gen.dm[0, idx],
                           frb_gen.width[idx],
                           frb_gen.snr[idx]))
+        plt.xlabel('Time (samples)')
+        plt.ylabel('Frequency (bins)')
     plt.tight_layout()
     plt.show()

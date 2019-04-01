@@ -97,4 +97,3 @@ class FRBGenerator:
         pulse = (self.snr / np.sqrt(self.num_chan)) * np.exp(-z)
 
         return pulse
-
