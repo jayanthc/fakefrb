@@ -19,6 +19,4 @@ The following needs to be modelled in the synthesis:
 - Negative class (noise-only, noise + RFI).
 - Positive class with more distortions (e.g., FRB + RFI).
 
--
-
 Created by Jayanth Chennamangalam.

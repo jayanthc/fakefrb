@@ -168,6 +168,11 @@ if __name__ == '__main__':
                         type=str,
                         help='output file name (*.npz)',
                         required=True)
+    # plot a few sample FRBs
+    parser.add_argument('-g',
+                        '--graphics',
+                        action='store_true',
+                        help='plot a few sample FRBs')
     args = parser.parse_args()
 
     # input validation
@@ -198,24 +203,28 @@ if __name__ == '__main__':
                         bw=args.bw,
                         t_bin_width=args.t_bin_width)
 
-    # plot a few random dynamic spectra
-    num_plot = 6
-    if args.num_frb <= num_plot:
-        indices = np.arange(args.num_frb)
-    else:
-        indices = np.sort(np.random.choice(np.arange(args.num_frb),
-                                           size=num_plot,
-                                           replace=False))
-    plt.figure(figsize=(12, 7))
-    for i, idx in enumerate(indices):
-        plt.subplot(2, 3, i + 1)
-        plt.imshow(frb_gen.specs[idx], origin='lower', aspect='auto')
-        plt.title('idx = {}\nd = {:.3f}\nw = {:.3f}\ns = {:.3f}'
-                  .format(idx,
-                          frb_gen.dm[0, idx],
-                          frb_gen.width[idx],
-                          frb_gen.snr[idx]))
-        plt.xlabel('Time (samples)')
-        plt.ylabel('Frequency (bins)')
-    plt.tight_layout()
-    plt.show()
+    if args.graphics:
+        # plot a few random dynamic spectra
+        num_plot = 6
+        if args.num_frb <= num_plot:
+            indices = np.arange(args.num_frb)
+        else:
+            indices = np.sort(np.random.choice(np.arange(args.num_frb),
+                                               size=num_plot,
+                                               replace=False))
+        plt.figure(figsize=(12, 7))
+        for i, idx in enumerate(indices):
+            plt.subplot(2, 3, i + 1)
+            plt.imshow(frb_gen.specs[idx], origin='lower', aspect='auto')
+            plt.title('idx = {}\n'
+                      'DM = {:.3f} cm^-3 pc\n'
+                      'Width = {:.3f} ms\n'
+                      'SNR = {:.3f}'
+                      .format(idx,
+                              frb_gen.dm[0, idx],
+                              frb_gen.width[idx],
+                              frb_gen.snr[idx]))
+            plt.xlabel('Time (samples)')
+            plt.ylabel('Frequency (bins)')
+        plt.tight_layout()
+        plt.show()
