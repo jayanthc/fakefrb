@@ -10,6 +10,10 @@ The output dynamic spectra, along with metadata used for generation, is stored i
 
 For more usage information, run `python fakefrb -h`.
 
+__Screenshot:__
+
+![alt text](https://github.com/jayanthc/fakefrb/blob/master/screenshots/screenshot.png "Screenshot")
+
 ## TODO
 
 The following needs to be modelled in the synthesis:
