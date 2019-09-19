@@ -2,9 +2,9 @@
 
 Program to generate fake fast radio bursts (FRBs) for training machine learning models.
 
-_This program is currently under development, and is expected to go through various revisions, including changes to usage._
+_This program is no longer maintained. If you would like to take over, please let me know._
 
-__Usage example:__ Generate 512 FRBs: `python fakefrb -n 512 -o frbs.npz`
+__Usage example:__ Generate 512 FRBs: `python fakefrb.py -n 512 -o frbs.npz`
 
 The output dynamic spectra, along with metadata used for generation, is stored in a compressed `.npz` file.
 
@@ -53,7 +53,7 @@ __Screenshot:__
 
 For ML training, the default options should create a file with the given number of FRBs forming the positive class. For the negative classes, the following are prescribed:
 
-- Generate a file with 0 DM pulses
+- Generate a file with 0-DM pulses (set lower and upper bounds of DM to 0)
 - Generate noise (can be done on the fly during training, using a generator)
 
 __Reading the output:__
