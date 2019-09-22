@@ -2,7 +2,7 @@
 
 Program to generate fake fast radio bursts (FRBs) for training machine learning models.
 
-_This program is no longer maintained. If you would like to take over, please let me know._
+_This program is no longer maintained._
 
 __Usage example:__ Generate 512 FRBs: `python fakefrb.py -n 512 -o frbs.npz`
 
